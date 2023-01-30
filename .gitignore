@@ -87,3 +87,5 @@ dkms.conf
 .vscode/
 submission/
 provided-code/
+output
+master-worker
