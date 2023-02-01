@@ -12,12 +12,7 @@ struct read_write_lock
     sem_t lock;
     sem_t writelock;
     int readers;
-
-    // for writers
-    pthread_mutex_t fastmutex;
-    pthread_cond_t cond;
     int writers;
-    int write_req;
 };
 
 void InitalizeReadWriteLock(struct read_write_lock * rw);
