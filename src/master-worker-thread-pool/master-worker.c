@@ -6,20 +6,6 @@
 #include <signal.h>
 #include <wait.h>
 #include <pthread.h>
-#include <assert.h>
-
-/**
- * 1. Add code to spawn required number of worker threads
- * 2. Write the function to be executed by these threads.
- * This function will consume elements from the shared buffer and print them.
- *
- * 3. Synchronize producer-consumer such that every number of printed once
- * 4. Producers must not produce when buffer is full
- * 5. Consumer should not try to consume while buffer is empty
- *
- * 6. Only use pthreads conditional variables
- *
- */
 
 int item_to_produce, curr_buf_size, nitems_consumed;
 int total_items, max_buf_size, num_workers, num_masters;
@@ -42,25 +28,24 @@ void* generate_requests_loop(void* data) {
     int thread_id = *((int*)data);
 
     while (1) {
-        int rc = pthread_mutex_lock(&buflock);
-
-        if (item_to_produce >= total_items) {
-            pthread_mutex_unlock(&buflock);
-            break;
-        }
+        pthread_mutex_lock(&buflock);
 
         while (curr_buf_size == max_buf_size && item_to_produce < total_items) {
             pthread_cond_wait(&fullbuf, &buflock);
         }
 
-        if (item_to_produce < total_items) {
+        if (item_to_produce >= total_items) {
+            // task complete: one producer waking another
+            pthread_cond_signal(&fullbuf);
+
+            pthread_mutex_unlock(&buflock);
+            break;
+        } else {
+            // produce
             buffer[curr_buf_size++] = item_to_produce;
-            print_produced(item_to_produce, thread_id);
-            item_to_produce++;
+            print_produced(item_to_produce++, thread_id);
 
             pthread_cond_signal(&emptybuf);
-        } else {
-            pthread_cond_signal(&fullbuf);
         }
 
         pthread_mutex_unlock(&buflock);
@@ -75,24 +60,24 @@ void* consume_requests_loop(void* data) {
     int thread_id = *((int*)data);
 
     while (1) {
-        int rc = pthread_mutex_lock(&buflock);
-
-        if (nitems_consumed >= total_items) {
-            pthread_mutex_unlock(&buflock);
-            break;
-        }
+        pthread_mutex_lock(&buflock);
 
         while (curr_buf_size == 0 && nitems_consumed < total_items) {
             pthread_cond_wait(&emptybuf, &buflock);
         }
 
-        if (nitems_consumed < total_items) {
+        if (nitems_consumed >= total_items) {
+            // task complete: one consumer waking another
+            pthread_cond_signal(&emptybuf);
+
+            pthread_mutex_unlock(&buflock);
+            break;
+        } else {
+            // consume
             print_consumed(buffer[--curr_buf_size], thread_id);
             nitems_consumed++;
 
             pthread_cond_signal(&fullbuf);
-        } else {
-            pthread_cond_signal(&emptybuf);
         }
 
         pthread_mutex_unlock(&buflock);
