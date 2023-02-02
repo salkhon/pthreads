@@ -5,8 +5,3 @@
 gcc -o master-worker master-worker.c -lpthread
 ./master-worker $1 $2 $3 $4 > output 
 awk -f check.awk MAX=$1 output
-
-rm master-worker output
-
-# gcc -o master-worker master-worker.c -lpthread
-# ./master-worker $1 $2 $3 $4
