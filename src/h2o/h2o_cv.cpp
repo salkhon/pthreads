@@ -3,6 +3,11 @@
 #include <stdio.h>
 #include <pthread.h>
 
+/**
+ * Whe
+ * 
+ */
+
 pthread_t thread_oxy;
 pthread_t thread_hydro;
 

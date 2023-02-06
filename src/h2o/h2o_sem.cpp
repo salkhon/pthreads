@@ -11,7 +11,8 @@ void bond(std::string atom, int thread_id) {
         std::cerr << "ERROR " << count << std::endl;
     }
 
-    std::cout << atom << " thread " << thread_id << " bonding for molecule " << nmol << std::endl;
+    std::cout << atom << " thread " << thread_id << " bonding for molecule " << nmol << std::endl
+        << (count % 3 == 2 ? "\n" : "");
     count++;
 }
 
@@ -50,6 +51,7 @@ void* oxy_worker(void* args) {
 
     nmol++;
 
+    // since o is the last atom to pass for a mol, it wakes up the next batch
     zem_up(&oxy_sem);
     zem_up(&hydro_sem);
     zem_up(&hydro_sem);
@@ -70,8 +72,7 @@ int main(int argc, char* argv[]) {
     zem_init(&hydro_sem, 2);
     zem_init(&bond_sem, 0);
 
-    pthread_t* oxythreads = (pthread_t*)malloc(num_o * sizeof(pthread_t));
-    pthread_t* hydrothreads = (pthread_t*)malloc(2 * num_o * sizeof(pthread_t));
+    pthread_t oxythreads[num_o], hydrothreads[2 * num_o];
 
     for (size_t i = 0; i < num_o; i++) {
         pthread_create(&oxythreads[i], NULL, oxy_worker, (void*)i);
